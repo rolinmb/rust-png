@@ -1,5 +1,3 @@
-Generating .png images in rust without external libraries
+Generating .png images in rust with the image crate
 
-TODO: .png file output is erroneous
-
-Run (from /src): rustc main && ./main
+Run: cargo build && cargo run
