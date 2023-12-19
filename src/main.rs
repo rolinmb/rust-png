@@ -101,9 +101,7 @@ fn main() {
   //let copyname = format!("src/png_out/{}.png", &outname);
   let invname = format!("src/png_out/{}_i.png", &outname);
   let edgname = format!("src/png_out/{}_e.png", &outname);
-  let edginame = format!("src/png_out/{}_ie.png", &outname);
   //pngcopy(&pngname, &copyname);
   pnginvert(&pngname, &invname);
   pngedges(&pngname, &edgname);
-  pngedges(&invname, &edginame);
 }
