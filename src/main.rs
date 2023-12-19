@@ -1,13 +1,31 @@
 use std::env;
 use std::path::Path;
-use image::{GenericImageView, ImageBuffer, Rgba, RgbaImage};
-//const WIDTH: u32 = 1000;
-//const HEIGHT: u32 = 1000;
+use image::{GenericImageView, ImageBuffer, Rgba, RgbaImage, imageops};
+
+const SOBELHORIZ: [f32; 9] = [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0];
+const SOBELVERTI: [f32; 9] = [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0];
 const INVALIDCHARS: &[&str; 16] = &[
   "`", "'", "?", "<", ">", ".", "+",
   "=", "*",":", ";", "&", "(", ")",
   "[", "]",
 ];
+
+fn pngcopy(pngname: &str, outname: &str) {
+  let srcpng = image::open(Path::new(&pngname)).unwrap();
+  println!("\npngcopy(): Successfully loaded {}", pngname);
+  println!("  -> {} Dimensions: {:?}", pngname, (srcpng.width(), srcpng.height()));
+  println!("  -> {} Pixel Color Type: {:?}", pngname, srcpng.color());
+  let srcpng = srcpng.to_rgba8();
+  let mut newpng: RgbaImage = ImageBuffer::new(srcpng.width(), srcpng.height());
+  for x in 0..srcpng.width() {
+    for y in 0..srcpng.height() {
+      let pxl = srcpng.get_pixel(x, y);
+      newpng.put_pixel(x, y, *pxl); 
+    }
+  }
+  newpng.save(outname).unwrap();
+  println!("\npngcopy(): Successfully saved / rewrote {}", outname);
+}
 
 fn rgbainvert(clr: &Rgba<u8>) -> Rgba<u8> {
   let clri = Rgba([
@@ -22,38 +40,40 @@ fn rgbainvert(clr: &Rgba<u8>) -> Rgba<u8> {
 fn pnginvert(pngname: &str, outname: &str) {
   let srcpng = image::open(Path::new(&pngname)).unwrap();
   println!("\npnginvert(): Successfully loaded {}", pngname);
-  let (pngwidth, pngheight) = srcpng.dimensions();
-  println!("  -> {} Dimensions: {:?}", pngname, (pngwidth, pngheight));
+  println!("  -> {} Dimensions: {:?}", pngname,  (srcpng.width(), srcpng.height()));
   println!("  -> {} Pixel Color Type: {:?}", pngname, srcpng.color());
   let srcpng = srcpng.to_rgba8();
-  let mut newpng: RgbaImage = ImageBuffer::new(pngwidth, pngheight);
-  for x in 0..pngwidth {
-    for y in 0..pngheight {
+  let mut newpng: RgbaImage = ImageBuffer::new(srcpng.width(), srcpng.height());
+  for x in 0..srcpng.width() {
+    for y in 0..srcpng.height() {
       let pxl = srcpng.get_pixel(x, y);
-      let pxl = rgbainvert(pxl);
-      newpng.put_pixel(x, y, pxl);
+      newpng.put_pixel(x, y, rgbainvert(pxl));
     }
   }
   newpng.save(outname).unwrap();
-  println!("\npnginvert(): Successfully saved {}", outname);
+  println!("\npnginvert(): Successfully saved / rewrote {}", outname);
 }
 
-fn pngcopy(pngname: &str, outname: &str) {
-  let srcpng = image::open(Path::new(&pngname)).unwrap();
-  println!("\npngcopy(): Successfully loaded {}", pngname);
-  let (pngwidth, pngheight) = srcpng.dimensions();
-  println!("  -> {} Dimensions: {:?}", pngname, srcpng.dimensions());
+fn pngedges(pngname: &str, outname: &str) {
+  let srcpng = image::open(&pngname).unwrap();
+  println!("\nedgedetect(): Successfully loaded {}", pngname);
+  println!("  -> {} Dimensions: {:?}", pngname, (srcpng.width(), srcpng.height()));
   println!("  -> {} Pixel Color Type: {:?}", pngname, srcpng.color());
-  let srcpng = srcpng.to_rgba8();
-  let mut newpng: RgbaImage = ImageBuffer::new(pngwidth, pngheight);
-  for x in 0..pngwidth {
-    for y in 0..pngheight {
-      let pxl = srcpng.get_pixel(x, y);
-      newpng.put_pixel(x, y, *pxl); 
+  let graypng = srcpng.to_luma8();
+  let gradx = imageops::filter3x3(&graypng, &SOBELHORIZ);
+  let grady = imageops::filter3x3(&graypng, &SOBELVERTI);
+  let mut edgemag = RgbaImage::new(srcpng.width(), srcpng.height());
+  for x in 0..srcpng.width() {
+    for y in 0..srcpng.height() {
+      let magx = gradx.get_pixel(x, y)[0] as f32;
+      let magy = grady.get_pixel(x, y)[0] as f32;
+      let mag = (magx.powi(2) + magy.powi(2)).sqrt() as u8;
+      let pxl = Rgba([mag, mag, mag, 255]);
+      edgemag.put_pixel(x, y, pxl);
     }
   }
-  newpng.save(outname).unwrap();
-  println!("\npngcopy(): Successfully saved {}", outname);
+  edgemag.save(outname).unwrap();
+  println!("\nedgedetect(): Scucessfully saved / rewrote {}", outname);
 }
 
 fn main() {
@@ -78,8 +98,12 @@ fn main() {
     panic!("main(): Please enter a .png name to output to src/png_out as the second argument");
   };
   let pngname = format!("src/png_in/{}.png", &pngname);
-  let copyname = format!("src/png_out/{}.png", &outname);
-  let invname = format!("src/png_out/{}i.png", &outname);
-  pngcopy(&pngname, &copyname);
-  pnginvert(&copyname, &invname);
+  //let copyname = format!("src/png_out/{}.png", &outname);
+  let invname = format!("src/png_out/{}_i.png", &outname);
+  let edgname = format!("src/png_out/{}_e.png", &outname);
+  let edginame = format!("src/png_out/{}_ie.png", &outname);
+  //pngcopy(&pngname, &copyname);
+  pnginvert(&pngname, &invname);
+  pngedges(&pngname, &edgname);
+  pngedges(&invname, &edginame);
 }
