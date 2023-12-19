@@ -1,9 +1,13 @@
-//use std::env;
+use std::env;
 use std::path::Path;
 use image::{GenericImageView, ImageBuffer, RgbaImage};
-
 //const WIDTH: u32 = 1000;
 //const HEIGHT: u32 = 1000;
+const INVALIDCHARS: &[&str; 16] = &[
+  "`", "'", "?", "<", ">", ".", "+",
+  "=", "*",":", ";", "&", "(", ")",
+  "[", "]",
+];
 
 fn pngcopy(pngname: &str, outname: &str) {
   let srcpng = image::open(Path::new(&pngname)).unwrap();
@@ -24,22 +28,27 @@ fn pngcopy(pngname: &str, outname: &str) {
 }
 
 fn main() {
-  /*let pngname = if env::args().count() == 3 {
+  let pngname = if env::args().count() == 3 {
+    for &c in INVALIDCHARS {
+      if env::args().nth(1).unwrap().contains(c) {
+        panic!("Invalid character in filename");
+      }
+    }
     env::args().nth(1).unwrap()
   } else {
-    panic!("Please select a file from /png_in/ to use");
+    panic!("Please enter from src/png_in to use as the first argument");
   };
-  */let pngname = "png_in/IMG_0950.png";
-  let outname = "png_out/test.png";
-  pngcopy(pngname, outname);
-  /*let img: RgbImage = ImageBuffer::new(WIDTH, HEIGHT);
-  let img = ImageBuffer::from_fn(WIDTH, HEIGHT, |x, _| {
-    if x % 2 == 0 {
-      image::Luma([0u8])
-    } else {
-      image::Luma([255u8])
+  let outname = if !env::args().nth(2).unwrap().trim().is_empty() {
+    for &c in INVALIDCHARS {
+      if env::args().nth(2).unwrap().contains(c) {
+        panic!("Invalid character in filename");
+      }
     }
-  });
-  img.save(outname).unwrap();
-  println!("successfully created {}", outname);*/
+    env::args().nth(2).unwrap()
+  } else {
+    panic!("Please enter a .png name to output to src/png_out as the second argument");
+  };
+  let pngname = format!("src/png_in/{}.png", &pngname);
+  let outname = format!("src/png_out/{}.png", &outname);
+  pngcopy(&pngname, &outname);
 }
