@@ -126,8 +126,8 @@ fn main() {
   //pngedges(&pngname, &edgname);
   custompng(
     &customname, 1000, 1000,
-    |x, y| (x*x + y) as u32,
-    |x, y| (x + y).wrapping_mul((x.wrapping_sub(y))) as u32,
+    |x, y| (x*x + y*y) as u32,
+    |x, y| (x + y).wrapping_mul(x.wrapping_sub(y)) as u32,
     |x, y| (x * y) as u32,
   );
 }
