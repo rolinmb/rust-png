@@ -1,4 +1,4 @@
-use std::env;
+//use std::env;
 use std::path::Path;
 use image::{GenericImageView, ImageBuffer, Rgba, RgbaImage, imageops};
 
@@ -96,7 +96,7 @@ fn custompng(
 }
 
 fn main() {
-  let pngname = if env::args().count() == 3 {
+  /*let pngname = if env::args().count() == 3 {
     for &c in INVALIDCHARS {
       if env::args().nth(1).unwrap().contains(c) {
         panic!("main(): Invalid character '{}' in pngname '{}'", c, env::args().nth(2).unwrap());
@@ -115,19 +115,59 @@ fn main() {
     env::args().nth(2).unwrap()
   } else {
     panic!("main(): Please enter a .png name to output to src/png_out as the second argument");
-  };
+  };*/
   //let pngname = format!("src/png_in/{}.png", &pngname);
   //let copyname = format!("src/png_out/{}.png", &outname);
   //let invname = format!("src/png_out/{}_i.png", &outname);
   //let edgname = format!("src/png_out/{}_e.png", &outname);
-  let customname = format!("src/png_out/{}_c.png", &outname);
+  //let customname = format!("src/png_out/{}_c.png", &outname);
   //pngcopy(&pngname, &copyname);
   //pnginvert(&pngname, &invname);
   //pngedges(&pngname, &edgname);
-  custompng(
+  /*custompng(
     &customname, 1000, 1000,
     |x, y| (x*x + y*y) as u32,
     |x, y| (x + y).wrapping_mul(x.wrapping_sub(y)) as u32,
     |x, y| (x * y) as u32,
+  );*/
+  let pngname: &str = "src/png_out/test.png";
+  custompng(
+    &pngname, 1000, 1000,
+    |x, y| { // mandelbrot set
+      const MAX_ITER: u32 = 1000;
+      let c = (x as f64 - 500.0) / 200.0 + (y as f64 - 500.0) / 200.0 * 1.5 * 1.5 * 2.0;
+      let mut z = 0.0;
+      let mut n = 0;
+      while z <= 2.0 && n < MAX_ITER {
+        z = z * z + c;
+        n += 1;
+      }
+      n
+    },
+    |x, y| { // julia set
+      const MAX_ITER: u32 = 1000;
+      let c = -0.8 + 0.156 * (x as f64 - 500.0) / 500.0 + 0.624 * (y as f64 - 500.0) / 500.0 * 1.5 * 1.5 * 2.0;
+      let mut z = (x as f64 - 500.0) / 200.0 + (y as f64 - 500.0) / 200.0 * 1.5 * 1.5 * 2.0 * 1.5 * 1.5 * 2.0 * 1.5 * 1.5 * 2.0;
+      let mut n = 0;
+      while z <= 2.0 && n < MAX_ITER {
+        z = z * z + c;
+        n += 1;
+      }
+      n
+    },
+    |x, y| { // strange attractor
+      let mut xn: f32 = 0.0;
+      let mut yn: f32 = 0.0;
+      let mut i = 0;
+      while i < 1000 {
+        let xnew = yn.sin() + 1.1 * (xn * xn - yn * yn).sin();
+        let ynew = xn.cos() + 1.1 * (xn * xn - yn * yn).cos();
+        xn = xnew;
+        yn = ynew;
+        i += 1;
+      }
+      let value = ((xn * 1000.0) as u32) % 256;
+      value
+    },
   );
 }
